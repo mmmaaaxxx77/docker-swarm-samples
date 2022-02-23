@@ -1,0 +1,30 @@
+version: "3.2"
+
+services:
+
+  fetcher:
+    build:
+      context: ./sender
+      dockerfile: Dockerfile
+    image: 10.140.15.238:5000/sender
+    restart: always
+    networks:
+      - demo-net
+    command: python -c 'from sender import run; run();'
+    deploy:
+      mode: replicated
+      replicas: 2
+      placement:
+        constraints:
+          - node.labels.rabbitmq3 == true
+      update_config:
+        parallelism: 3
+        delay: 2s
+    logging:
+        driver: "json-file"
+        options:
+          max-size: "10m"
+
+networks:
+  demo-net:
+    external: true

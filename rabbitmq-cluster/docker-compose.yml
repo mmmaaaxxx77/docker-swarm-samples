@@ -1,0 +1,76 @@
+version: "3.2"
+
+services:
+
+  rabbitmq-01:
+    image: rabbitmq:3.7.14-management
+    hostname: rabbitmq-01
+    ports:
+      - 5672:5672
+      - 15672:15672
+    environment:
+      - RABBITMQ_DEFAULT_USER=demo
+      - RABBITMQ_DEFAULT_PASS=demo
+      - RABBITMQ_ERLANG_COOKIE="MY-SECRET-KEY-123"
+      - RABBITMQ_VM_MEMORY_HIGH_WATERMARK=0.8
+      - RABBITMQ_NODENAME=rabbitmq
+      - RABBITMQ_HIPE_COMPILE=1
+    networks:
+      - demo-net
+    logging:
+        driver: "json-file"
+        options:
+          max-size: "10m"
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - node.labels.rabbitmq1 == true
+
+  rabbitmq-02:
+    image: rabbitmq:3.7.14-management
+    hostname: rabbitmq-02
+    environment:
+      - RABBITMQ_DEFAULT_USER=demo
+      - RABBITMQ_DEFAULT_PASS=demo
+      - RABBITMQ_ERLANG_COOKIE="MY-SECRET-KEY-123"
+      - RABBITMQ_VM_MEMORY_HIGH_WATERMARK=0.8
+      - RABBITMQ_NODENAME=rabbitmq
+      - RABBITMQ_HIPE_COMPILE=1
+    networks:
+      - demo-net
+    logging:
+        driver: "json-file"
+        options:
+          max-size: "10m"
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - node.labels.rabbitmq2 == true
+
+  rabbitmq-03:
+    image: rabbitmq:3.7.14-management
+    hostname: rabbitmq-03
+    environment:
+      - RABBITMQ_DEFAULT_USER=demo
+      - RABBITMQ_DEFAULT_PASS=demo
+      - RABBITMQ_ERLANG_COOKIE="MY-SECRET-KEY-123"
+      - RABBITMQ_VM_MEMORY_HIGH_WATERMARK=0.8
+      - RABBITMQ_NODENAME=rabbitmq
+      - RABBITMQ_HIPE_COMPILE=1
+    networks:
+      - demo-net
+    logging:
+        driver: "json-file"
+        options:
+          max-size: "10m"
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - node.labels.rabbitmq3 == true
+
+networks:
+  demo-net:
+    external: true

@@ -1,0 +1,51 @@
+version: "3.2"
+
+services:
+
+  jobmanager:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    image: 10.140.15.238:5000/flink-test
+    expose:
+      - "6123"
+    ports:
+      - "8081:8081"
+    networks:
+      - demo-net
+    logging:
+        driver: "json-file"
+        options:
+          max-size: "10m"
+    command: jobmanager
+    environment:
+      - JOB_MANAGER_RPC_ADDRESS=jobmanager
+
+  taskmanager:
+    image: 10.140.15.238:5000/flink-test
+    expose:
+      - "6121"
+      - "6122"
+    networks:
+      - demo-net
+    logging:
+        driver: "json-file"
+        options:
+          max-size: "10m"
+    depends_on:
+      - jobmanager
+    command: taskmanager
+    links:
+      - "jobmanager:jobmanager"
+    environment:
+      - JOB_MANAGER_RPC_ADDRESS=jobmanager
+    deploy:
+      mode: replicated
+      replicas: 3
+      update_config:
+        parallelism: 3
+        delay: 2s
+
+networks:
+  demo-net:
+    external: true

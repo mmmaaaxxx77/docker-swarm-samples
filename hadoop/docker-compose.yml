@@ -1,0 +1,197 @@
+version: '3'
+
+services:
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop2.7.4-java8
+    networks:
+      demo-net:
+        ipv4_address: 172.19.0.1
+
+    hostname: namenode
+    logging:
+        driver: "json-file"
+        options:
+          max-size: "10m"
+    volumes:
+      - namenode:/hadoop/dfs/name
+    environment:
+      - CLUSTER_NAME=test
+    env_file:
+      - ./hadoop.env
+    ports:
+      - "50070:50070"
+      - "9870:9870"
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.labels.rabbitmq1 == true
+
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop2.7.4-java8
+    networks:
+      - demo-net
+    hostname: datanode
+    logging:
+        driver: "json-file"
+        options:
+          max-size: "10m"
+    volumes:
+      - datanode:/hadoop/dfs/data
+    env_file:
+      - ./hadoop.env
+    environment:
+      SERVICE_PRECONDITION: "namenode:50070"
+    ports:
+      - "50075:50075"
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - node.labels.rabbitmq1 == true
+      restart_policy:
+        condition: on-failure
+
+  datanode2:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop2.7.4-java8
+    networks:
+      - demo-net
+    hostname: datanode2
+    logging:
+        driver: "json-file"
+        options:
+          max-size: "10m"
+    volumes:
+      - datanode2:/hadoop/dfs/data
+    env_file:
+      - ./hadoop.env
+    environment:
+      SERVICE_PRECONDITION: "namenode:50070"
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - node.labels.rabbitmq2 == true
+      restart_policy:
+        condition: on-failure
+
+  hue:
+    image: bde2020/hdfs-filebrowser:3.11
+    networks:
+      - demo-net
+    hostname: hue
+    ports:
+      - "8089:8088"
+    logging:
+        driver: "json-file"
+        options:
+          max-size: "10m"
+    deploy:
+      replicas: 1
+      mode: replicated
+      restart_policy:
+        condition: on-failure
+    environment:
+      - NAMENODE_HOST=namenode
+
+  resourcemanager:
+    image: bde2020/hadoop-resourcemanager:2.0.0-hadoop2.7.4-java8
+    networks:
+      - demo-net
+    hostname: resourcemanager
+    logging:
+        driver: "json-file"
+        options:
+          max-size: "10m"
+    environment:
+      SERVICE_PRECONDITION: "namenode:50070 datanode:50075"
+    env_file:
+      - ./hadoop.env
+    ports:
+      - "8088:8088"
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.labels.rabbitmq1 == true
+    healthcheck:
+      disable: true
+
+  nodemanager:
+    image: bde2020/hadoop-nodemanager:2.0.0-hadoop2.7.4-java8
+    networks:
+      - demo-net
+    hostname: nodemanager
+    logging:
+        driver: "json-file"
+        options:
+          max-size: "10m"
+    environment:
+      SERVICE_PRECONDITION: "namenode:50070 datanode:50075 datanode2:50075 resourcemanager:8088"
+    env_file:
+      - ./hadoop.env
+    ports:
+      - "8042:8042"
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  nodemanager2:
+    image: bde2020/hadoop-nodemanager:2.0.0-hadoop2.7.4-java8
+    networks:
+      - demo-net
+    hostname: nodemanager2
+    logging:
+        driver: "json-file"
+        options:
+          max-size: "10m"
+    environment:
+      SERVICE_PRECONDITION: "namenode:50070 datanode:50075 datanode2:50075 resourcemanager:8088"
+    env_file:
+      - ./hadoop.env
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  historyserver:
+    image: bde2020/hadoop-historyserver:2.0.0-hadoop2.7.4-java8
+    networks:
+      - demo-net
+    hostname: historyserver
+    logging:
+        driver: "json-file"
+        options:
+          max-size: "10m"
+    ports:
+      - "8188:8188"
+    volumes:
+      - hadoop_historyserver:/hadoop/yarn/timeline
+    environment:
+      SERVICE_PRECONDITION: "namenode:50070 datanode:50075 resourcemanager:8088"
+    env_file:
+      - ./hadoop.env
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - node.labels.rabbitmq1 == true
+
+volumes:
+  datanode:
+  datanode2:
+  namenode:
+  hadoop_historyserver:
+
+networks:
+  demo-net:
+    external: true

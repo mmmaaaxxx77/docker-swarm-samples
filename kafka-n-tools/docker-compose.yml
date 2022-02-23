@@ -1,0 +1,175 @@
+version: '3.2'
+
+services:
+  zookeeper:
+    image: wurstmeister/zookeeper
+    hostname: zookeeper
+    ports:
+      - "2181:2181"
+    networks:
+      - demo-net
+    logging:
+        driver: "json-file"
+        options:
+          max-size: "10m"
+
+  kafka-1:
+    image: wurstmeister/kafka:latest
+    ports:
+      - target: 9094
+        published: 9094
+        protocol: tcp
+        mode: host
+      - target: 9092
+        published: 9092
+        protocol: tcp
+        mode: host
+      - target: 1099
+        published: 1099
+        protocol: tcp
+        mode: host
+    environment:
+      HOSTNAME_COMMAND: "curl https://ipinfo.io/ip"
+      BROKER_ID_COMMAND: "curl https://ipinfo.io/ip | cut -c 13-15"
+      KAFKA_CREATE_TOPICS: "topic:3:1,topic5:3:1"
+#      KAFKA_LOG_RETENTION_MS: 3000
+      KAFKA_LOG_RETENTION_BYTES: -1
+      KAFKA_LOG_RETENTION_DAYS: 2
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_LOG_DIRS: /kafka
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://_{HOSTNAME_COMMAND}:9092,OUTSIDE://_{HOSTNAME_COMMAND}:9094
+      KAFKA_LISTENERS: INSIDE://:9092,OUTSIDE://:9094
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_JMX_OPTS: "-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=10.140.15.238 -Dcom.sun.management.jmxremote.rmi.port=1099"
+      JMX_PORT: 1099
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - kafka1_data:/kafka
+    logging:
+        driver: "json-file"
+        options:
+          max-size: "10m"
+    deploy:
+      mode: global
+      placement:
+        constraints: [node.labels.node == one]
+    networks:
+      - demo-net
+
+  kafka-2:
+    image: wurstmeister/kafka:latest
+    ports:
+      - target: 9094
+        published: 9094
+        protocol: tcp
+        mode: host
+      - target: 9092
+        published: 9092
+        protocol: tcp
+        mode: host
+      - target: 1099
+        published: 1099
+        protocol: tcp
+        mode: host
+    environment:
+      HOSTNAME_COMMAND: "curl https://ipinfo.io/ip"
+      BROKER_ID_COMMAND: "curl https://ipinfo.io/ip | cut -c 12-15"
+#      KAFKA_LOG_RETENTION_MS: 3000
+      KAFKA_LOG_RETENTION_BYTES: -1
+      KAFKA_LOG_RETENTION_DAYS: 2
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_LOG_DIRS: /kafka
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://_{HOSTNAME_COMMAND}:9092,OUTSIDE://_{HOSTNAME_COMMAND}:9094
+      KAFKA_LISTENERS: INSIDE://:9092,OUTSIDE://:9094
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_JMX_OPTS: "-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=10.140.15.236 -Dcom.sun.management.jmxremote.rmi.port=1099"
+      JMX_PORT: 1099
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - kafka2_data:/kafka
+    logging:
+        driver: "json-file"
+        options:
+          max-size: "10m"
+    deploy:
+      mode: global
+      placement:
+        constraints: [node.labels.node == two]
+    networks:
+      - demo-net
+
+  kafka-3:
+    image: wurstmeister/kafka:latest
+    ports:
+      - target: 9094
+        published: 9094
+        protocol: tcp
+        mode: host
+      - target: 9092
+        published: 9092
+        protocol: tcp
+        mode: host
+      - target: 1099
+        published: 1099
+        protocol: tcp
+        mode: host
+    environment:
+      HOSTNAME_COMMAND: "curl https://ipinfo.io/ip"
+      BROKER_ID_COMMAND: "curl https://ipinfo.io/ip | cut -c 12-15"
+#      KAFKA_LOG_RETENTION_MS: 3000
+      KAFKA_LOG_RETENTION_BYTES: -1
+      KAFKA_LOG_RETENTION_DAYS: 2
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_LOG_DIRS: /kafka
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://_{HOSTNAME_COMMAND}:9092,OUTSIDE://_{HOSTNAME_COMMAND}:9094
+      KAFKA_LISTENERS: INSIDE://:9092,OUTSIDE://:9094
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_JMX_OPTS: "-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=10.140.15.237 -Dcom.sun.management.jmxremote.rmi.port=1099"
+      JMX_PORT: 1099
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - kafka3_data:/kafka
+    logging:
+        driver: "json-file"
+        options:
+          max-size: "10m"
+    deploy:
+      mode: global
+      placement:
+        constraints: [node.labels.node == three]
+    networks:
+      - demo-net
+
+  manager:
+    image: kafkamanager/kafka-manager
+    restart: always
+    hostname: manager
+    environment:
+      ZK_HOSTS: zookeeper:2181
+    ports:
+      - '9000:9000'
+    logging:
+        driver: "json-file"
+        options:
+          max-size: "10m"
+    networks:
+      - demo-net
+    deploy:
+      mode: global
+      placement:
+        constraints: [node.labels.node == one]
+
+volumes:
+    kafka1_data:
+    kafka2_data:
+    kafka3_data:
+
+networks:
+  demo-net:
+    external: true

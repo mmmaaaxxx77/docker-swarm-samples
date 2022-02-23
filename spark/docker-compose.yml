@@ -1,0 +1,56 @@
+version: "3.2"
+
+services:
+
+  spark-master:
+    build:
+      context: .
+      dockerfile: Dockerfile-master
+    image: 10.140.15.238:5000/spark-master
+    hostname: spark-master
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    environment:
+      - INIT_DAEMON_STEP=setup_spark
+      - "constraint:node==spark-master"
+    networks:
+      - demo-net
+    logging:
+        driver: "json-file"
+        options:
+          max-size: "10m"
+    deploy:
+      mode: replicated
+      placement:
+        constraints:
+          - node.labels.rabbitmq1 == true
+
+  spark-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile-worker
+    image: 10.140.15.238:5000/spark-worker
+    depends_on:
+      - spark-master
+    ports:
+      - "8081:8081"
+    environment:
+      - "SPARK_MASTER=spark://spark-master:7077"
+      - "constraint:node==spark-master"
+    networks:
+      - demo-net
+    logging:
+        driver: "json-file"
+        options:
+          max-size: "10m"
+    deploy:
+      mode: replicated
+      replicas: 3
+      update_config:
+        parallelism: 3
+        delay: 2s
+
+networks:
+  demo-net:
+    external: true
